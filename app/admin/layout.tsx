@@ -12,7 +12,8 @@ import {
   Home,
   User,
   Settings,
-  ChevronRight
+  ChevronRight,
+  Image as ImageIcon
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
@@ -49,6 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Contacts", href: "/admin/contacts", icon: MessageSquare },
     { name: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
     { name: "Manage Rooms", href: "/admin/rooms", icon: Home },
+    { name: "Manage Gallery", href: "/admin/gallery", icon: ImageIcon },
   ];
 
   return (

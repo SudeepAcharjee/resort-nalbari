@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Trash2, CheckCircle, Clock, Search, Filter } from "lucide-react";
+import { Trash2, Filter } from "lucide-react";
 
 interface Contact {
   id: string;
@@ -19,7 +19,8 @@ interface Contact {
 export default function AdminContacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "contacts"), orderBy("createdAt", "desc"));
@@ -44,28 +45,55 @@ export default function AdminContacts() {
     }
   };
 
-  const filteredContacts = contacts.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.subject.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredContacts = contacts.filter(c => {
+    if (!c.createdAt) return true;
+    const contactDate = c.createdAt.toDate();
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(23, 59, 59, 999);
+
+    if (start && contactDate < start) return false;
+    if (end && contactDate > end) return false;
+    
+    return true;
+  });
 
   return (
     <div className="space-y-10">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-primary font-serif text-4xl mb-2">Inquiries</h1>
-          <p className="text-primary/40 font-bold uppercase tracking-widest text-xs">Manage messages from your guests</p>
+          <p className="text-primary/40 font-bold uppercase tracking-widest text-xs">Filter and manage guest messages</p>
         </div>
-        <div className="relative w-72">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/30" />
-            <input 
-                type="text" 
-                placeholder="Search messages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white border border-primary/5 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
-            />
+        
+        <div className="flex flex-wrap items-center gap-4">
+            <div className="relative">
+                <span className="absolute -top-5 left-1 text-[8px] font-bold uppercase tracking-widest text-primary/40">From Date</span>
+                <input 
+                    type="date" 
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="pl-4 pr-4 py-3 rounded-2xl bg-white border border-primary/5 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-xs font-bold text-primary"
+                />
+            </div>
+            <div className="relative">
+                <span className="absolute -top-5 left-1 text-[8px] font-bold uppercase tracking-widest text-primary/40">To Date</span>
+                <input 
+                    type="date" 
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="pl-4 pr-4 py-3 rounded-2xl bg-white border border-primary/5 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-xs font-bold text-primary"
+                />
+            </div>
+            <button 
+                onClick={() => { setStartDate(""); setEndDate(""); }}
+                className="p-3 rounded-2xl bg-primary/5 text-primary/40 hover:bg-primary/10 transition-all"
+                title="Reset Filters"
+            >
+                <Filter className="w-4 h-4" />
+            </button>
         </div>
       </div>
 
@@ -151,20 +179,7 @@ export default function AdminContacts() {
         )}
       </div>
 
-      <div className="bg-white rounded-[3rem] shadow-sm border border-primary/5 p-10 space-y-8">
-        <div>
-          <h2 className="text-primary font-serif text-2xl mb-2">Resort Location</h2>
-          <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px]">Reference map for your location</p>
-        </div>
-        <div className="h-[400px] rounded-3xl overflow-hidden border border-primary/5 shadow-inner bg-primary/5">
-          <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3575.455648643886!2d91.3323!3d26.3314!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjbCsDE5JzUzLjAiTiA5McKwMTknNTYuMyJF!5e0!3m2!1sen!2sin!4v1714570000000!5m2!1sen!2sin"
-            className="w-full h-full border-none grayscale-[0.2]"
-            allowFullScreen
-            loading="lazy"
-          ></iframe>
-        </div>
-      </div>
+    
     </div>
   );
 }

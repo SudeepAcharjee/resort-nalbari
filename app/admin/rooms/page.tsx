@@ -6,6 +6,7 @@ import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, deleteD
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Edit2, X, Upload, Save, CheckCircle2, Loader2, Image as ImageIcon, Bed, User, Maximize } from "lucide-react";
 import Image from "next/image";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 interface Room {
   id: string;
@@ -183,7 +184,14 @@ export default function ManageRooms() {
             >
                 <div className="md:w-1/3 relative min-h-[250px]">
                     {room.images[0] ? (
-                        <Image src={room.images[0]} alt={room.title} fill className="object-cover" />
+                        <Image 
+                            loader={room.images[0].includes('cloudinary') ? cloudinaryLoader : undefined}
+                            src={room.images[0]} 
+                            alt={room.title} 
+                            fill 
+                            className="object-cover" 
+                            sizes="(max-width: 768px) 100vw, 33vw" 
+                        />
                     ) : (
                         <div className="absolute inset-0 bg-primary/5 flex items-center justify-center text-primary/20">
                             <ImageIcon className="w-12 h-12" />
@@ -223,8 +231,8 @@ export default function ManageRooms() {
                         <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">{room.available} Rooms Left</span>
                         <div className="flex gap-1">
                             {room.images.slice(0, 3).map((img, i) => (
-                                <div key={i} className="w-8 h-8 rounded-lg overflow-hidden border border-white">
-                                    <Image src={img} alt="" width={32} height={32} className="object-cover" />
+                                <div key={i} className="w-8 h-8 rounded-lg overflow-hidden border border-white relative">
+                                    <Image src={img} alt="" fill className="object-cover" sizes="32px" />
                                 </div>
                             ))}
                             {room.images.length > 3 && (
@@ -315,7 +323,14 @@ export default function ManageRooms() {
                                         animate={{ opacity: 1, scale: 1 }}
                                         className="relative aspect-square rounded-2xl overflow-hidden group border border-primary/5 shadow-md"
                                     >
-                                        <Image src={url} alt="" fill className="object-cover" />
+                                        <Image 
+                                            loader={url.includes('cloudinary') ? cloudinaryLoader : undefined}
+                                            src={url} 
+                                            alt="" 
+                                            fill 
+                                            className="object-cover" 
+                                            sizes="(max-width: 768px) 50vw, 20vw" 
+                                        />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <button 
                                                 type="button"

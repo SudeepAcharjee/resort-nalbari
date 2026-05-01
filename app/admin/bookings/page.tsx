@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Trash2, CheckCircle, Clock, Search, MapPin, User, Users } from "lucide-react";
+import { Calendar, Trash2, Clock, User, Users, Filter } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -21,7 +21,8 @@ interface Booking {
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
@@ -46,27 +47,55 @@ export default function AdminBookings() {
     }
   };
 
-  const filteredBookings = bookings.filter(b => 
-    b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    b.roomType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBookings = bookings.filter(b => {
+    if (!b.createdAt) return true;
+    const bookingDate = b.createdAt.toDate();
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(23, 59, 59, 999);
+
+    if (start && bookingDate < start) return false;
+    if (end && bookingDate > end) return false;
+    
+    return true;
+  });
 
   return (
     <div className="space-y-10">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-primary font-serif text-4xl mb-2">Booking Requests</h1>
-          <p className="text-primary/40 font-bold uppercase tracking-widest text-xs">Manage room reservations</p>
+          <p className="text-primary/40 font-bold uppercase tracking-widest text-xs">Filter and manage room reservations</p>
         </div>
-        <div className="relative w-72">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/30" />
-            <input 
-                type="text" 
-                placeholder="Search bookings..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white border border-primary/5 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
-            />
+        
+        <div className="flex flex-wrap items-center gap-4">
+            <div className="relative">
+                <span className="absolute -top-5 left-1 text-[8px] font-bold uppercase tracking-widest text-primary/40">From Date</span>
+                <input 
+                    type="date" 
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="pl-4 pr-4 py-3 rounded-2xl bg-white border border-primary/5 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-xs font-bold text-primary"
+                />
+            </div>
+            <div className="relative">
+                <span className="absolute -top-5 left-1 text-[8px] font-bold uppercase tracking-widest text-primary/40">To Date</span>
+                <input 
+                    type="date" 
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="pl-4 pr-4 py-3 rounded-2xl bg-white border border-primary/5 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-xs font-bold text-primary"
+                />
+            </div>
+            <button 
+                onClick={() => { setStartDate(""); setEndDate(""); }}
+                className="p-3 rounded-2xl bg-primary/5 text-primary/40 hover:bg-primary/10 transition-all"
+                title="Reset Filters"
+            >
+                <Filter className="w-4 h-4" />
+            </button>
         </div>
       </div>
 

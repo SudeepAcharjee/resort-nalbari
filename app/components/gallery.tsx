@@ -1,28 +1,82 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
-const categories = ["All", "Rooms", "Dining", "Activities", "Nature"];
+interface GalleryCategory {
+  id: string;
+  category: string;
+  images: string[];
+}
 
-const galleryItems = [
-  { id: 1, category: "Rooms", src: "/gallery/rooms-1.png", title: "Luxury Suite", size: "large" },
-  { id: 2, category: "Dining", src: "/gallery/dining-1.png", title: "Forest Dining", size: "small" },
-  { id: 3, category: "Nature", src: "/gallery/nature-1.png", title: "Agro Landscape", size: "medium" },
-  { id: 4, category: "Activities", src: "/gallery/activities-1.png", title: "Campfire Nights", size: "small" },
-  { id: 5, category: "Rooms", src: "/gallery/rooms-2.png", title: "Eco Cabin", size: "small" },
-  { id: 6, category: "Dining", src: "/gallery/dining-2.png", title: "Organic Breakfast", size: "medium" },
-  { id: 7, category: "Activities", src: "/gallery/activities-2.png", title: "Jungle Trekking", size: "large" },
-  { id: 8, category: "Nature", src: "/gallery/nature-2.png", title: "Misty Valleys", size: "small" },
-];
+const ITEMS_PER_PAGE = 6;
 
 const Gallery = () => {
+  const [galleryData, setGalleryData] = useState<GalleryCategory[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredItems = galleryItems.filter(
-    (item) => activeCategory === "All" || item.category === activeCategory
-  );
+  useEffect(() => {
+    const q = query(collection(db, "gallery"), orderBy("order", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as GalleryCategory[];
+      setGalleryData(docs);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const categories = useMemo(() => {
+    const cats = ["All", ...galleryData.map(item => item.category)];
+    return Array.from(new Set(cats));
+  }, [galleryData]);
+
+  const allItems = useMemo(() => {
+    if (activeCategory === "All") {
+      return galleryData.flatMap(item => 
+        item.images.map((img, idx) => ({ 
+          id: `${item.id}-${idx}`, 
+          category: item.category, 
+          src: img 
+        }))
+      );
+    }
+    const cat = galleryData.find(item => item.category === activeCategory);
+    return cat ? cat.images.map((img, idx) => ({ 
+      id: `${cat.id}-${idx}`, 
+      category: cat.category, 
+      src: img 
+    })) : [];
+  }, [galleryData, activeCategory]);
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [allItems, currentPage]);
+
+  const totalPages = Math.ceil(allItems.length / ITEMS_PER_PAGE);
+
+  // Reset page when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory]);
+
+  if (loading) {
+    return (
+        <div className="py-24 flex justify-center">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+    );
+  }
 
   return (
     <section id="gallery" className="py-24 bg-background px-6 md:px-12 lg:px-24">
@@ -56,49 +110,63 @@ const Gallery = () => {
         </div>
 
         {/* Gallery Grid */}
-        <motion.div 
-          layout
-          className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <AnimatePresence mode='popLayout'>
-            {filteredItems.map((item) => (
+            {paginatedItems.map((item) => (
               <motion.div
                 key={item.id}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4 }}
-                className="relative group cursor-pointer break-inside-avoid rounded-[2rem] overflow-hidden shadow-xl"
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-sm bg-primary/5"
               >
-                <div className="relative aspect-auto">
-                  <Image
-                    src={item.src}
-                    alt={item.title}
-                    width={800}
-                    height={1000}
-                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                </div>
+                <Image
+                  loader={item.src.includes('cloudinary') ? cloudinaryLoader : undefined}
+                  src={item.src}
+                  alt={item.category}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
                 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
-                  <span className="text-secondary text-[10px] font-bold uppercase tracking-widest mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                    {item.category}
-                  </span>
-                  <h3 className="text-white font-serif text-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
-                    {item.title}
-                  </h3>
-                </div>
-                
-                {/* Category Badge (Static) */}
-                <div className="absolute top-6 left-6 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white text-[8px] font-bold uppercase tracking-[0.2em] opacity-100 group-hover:opacity-0 transition-opacity">
-                  {item.category}
-                </div>
+                {/* Simplified Badge */}
+              
               </motion.div>
             ))}
           </AnimatePresence>
-        </motion.div>
+        </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-8 pt-16">
+                <button 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => prev - 1)}
+                    className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center text-primary disabled:opacity-20 hover:bg-primary hover:text-white transition-all"
+                >
+                    <ChevronLeft className="w-6 h-6" />
+                </button>
+                
+                <div className="flex items-center gap-3">
+                    {[...Array(totalPages)].map((_, i) => (
+                        <button 
+                            key={i}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className={`w-2 h-2 rounded-full transition-all ${currentPage === i + 1 ? 'w-8 bg-primary' : 'bg-primary/20 hover:bg-primary/40'}`}
+                        />
+                    ))}
+                </div>
+
+                <button 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center text-primary disabled:opacity-20 hover:bg-primary hover:text-white transition-all"
+                >
+                    <ChevronRight className="w-6 h-6" />
+                </button>
+            </div>
+        )}
       </div>
     </section>
   );

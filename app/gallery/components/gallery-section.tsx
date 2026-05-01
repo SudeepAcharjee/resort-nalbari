@@ -3,153 +3,207 @@
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
-const categories = ["All", "Rooms", "Dining", "Activities", "Nature"];
+interface GalleryCategory {
+    id: string;
+    category: string;
+    images: string[];
+}
 
-const galleryItems = [
-  { id: 1, category: "Rooms", src: "/gallery/rooms-1.png", title: "Luxury Suite" },
-  { id: 2, category: "Dining", src: "/gallery/dining-1.png", title: "Forest Dining" },
-  { id: 3, category: "Nature", src: "/gallery/nature-1.png", title: "Agro Landscape" },
-  { id: 4, category: "Activities", src: "/gallery/activities-1.png", title: "Campfire Nights" },
-  { id: 5, category: "Rooms", src: "/gallery/rooms-2.png", title: "Eco Cabin" },
-  { id: 6, category: "Dining", src: "/gallery/dining-2.png", title: "Organic Breakfast" },
-  { id: 7, category: "Activities", src: "/gallery/activities-2.png", title: "Jungle Trekking" },
-  { id: 8, category: "Nature", src: "/gallery/nature-2.png", title: "Misty Valleys" },
-  { id: 9, category: "Rooms", src: "/bedroom.png", title: "Master Bedroom" },
-  { id: 10, category: "Nature", src: "/hero-bg.png", title: "Aerial View" },
-  { id: 11, category: "Dining", src: "/gallery/dining-1.png", title: "Candlelight Dinner" },
-  { id: 12, category: "Activities", src: "/gallery/activities-1.png", title: "Nature Walk" },
-];
-
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 8;
 
 const GallerySection = () => {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [galleryData, setGalleryData] = useState<GalleryCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [mounted, setMounted] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const q = query(collection(db, "gallery"), orderBy("order", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as GalleryCategory[];
+      setGalleryData(docs);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const filteredItems = useMemo(() => {
-    return galleryItems.filter(
-      (item) => activeCategory === "All" || item.category === activeCategory
-    );
-  }, [activeCategory]);
+  const categories = useMemo(() => {
+    const cats = ["All", ...galleryData.map(item => item.category)];
+    return Array.from(new Set(cats));
+  }, [galleryData]);
 
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
-  const currentItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const allImages = useMemo(() => {
+    if (selectedCategory === "All") {
+      return galleryData.flatMap(item => 
+        item.images.map(img => ({ src: img, category: item.category }))
+      );
+    }
+    const cat = galleryData.find(item => item.category === selectedCategory);
+    return cat ? cat.images.map(img => ({ src: img, category: cat.category })) : [];
+  }, [galleryData, selectedCategory]);
 
-  const handleCategoryChange = (category: string) => {
-    setActiveCategory(category);
+  const paginatedImages = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allImages.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [allImages, currentPage]);
+
+  const totalPages = Math.ceil(allImages.length / ITEMS_PER_PAGE);
+
+  // Reset page when category changes
+  useEffect(() => {
     setCurrentPage(1);
-  };
+  }, [selectedCategory]);
+
+  if (loading) {
+    return (
+        <div className="py-40 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            <p className="text-primary/40 font-bold uppercase tracking-widest text-xs">Loading Gallery...</p>
+        </div>
+    );
+  }
 
   return (
-    <section className="py-32 bg-background px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-20">
-          <div className="space-y-4">
-            <span className="text-secondary font-bold tracking-widest uppercase text-xs">Portfolio</span>
-            <h2 className="text-primary font-serif text-4xl md:text-6xl leading-tight">
-              Captured <span className="italic font-light">Moments</span>
-            </h2>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryChange(category)}
-                className={`px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${
-                  activeCategory === category
-                    ? "bg-primary text-white"
-                    : "bg-white text-primary/60 border border-primary/10 hover:border-primary"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+    <section className="py-24 px-6 md:px-12">
+      <div className="max-w-7xl mx-auto space-y-16">
+        
+        {/* Category Filter */}
+        <div className="flex flex-wrap justify-center gap-4">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
+                selectedCategory === cat
+                  ? "bg-primary text-white shadow-xl shadow-primary/20 scale-105"
+                  : "bg-primary/5 text-primary/60 hover:bg-primary/10"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
-        <motion.div 
-          layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20"
-        >
-          <AnimatePresence mode="wait">
-            {currentItems.map((item) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
-                className="group relative aspect-square rounded-[2.5rem] overflow-hidden shadow-xl bg-white"
-              >
-                <Image
-                  src={item.src}
-                  alt={item.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-10">
-                    <span className="text-secondary text-xs font-bold uppercase tracking-widest mb-2">
-                        {item.category}
-                    </span>
-                    <h3 className="text-white font-serif text-2xl">
-                        {item.title}
-                    </h3>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Pagination */}
-        {mounted && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-6">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="w-14 h-14 rounded-full border border-primary/10 flex items-center justify-center text-primary disabled:opacity-30 hover:bg-primary hover:text-white transition-all"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            
-            <div className="flex gap-3">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-12 h-12 rounded-full font-bold text-xs transition-all ${
-                    currentPage === i + 1
-                      ? "bg-secondary text-white shadow-lg shadow-secondary/20"
-                      : "bg-white text-primary/40 border border-primary/10 hover:border-primary/20"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+        {/* Gallery Grid */}
+        {allImages.length === 0 ? (
+            <div className="py-20 text-center text-primary/30 font-serif text-2xl">
+                No images found in this category.
             </div>
+        ) : (
+            <>
+                <motion.div 
+                    layout
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+                >
+                    <AnimatePresence mode="popLayout">
+                        {paginatedImages.map((image, idx) => (
+                            <motion.div
+                                key={image.src}
+                                layout
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.4, delay: idx * 0.05 }}
+                                onClick={() => setSelectedImage(image.src)}
+                                className="group relative aspect-square rounded-[2.5rem] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500"
+                            >
+                                <Image
+                                    loader={image.src.includes('cloudinary') ? cloudinaryLoader : undefined}
+                                    src={image.src}
+                                    alt={image.category}
+                                    fill
+                                    className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                />
+                                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/20 backdrop-blur-md rounded-2xl opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 border border-white/30">
+                                    <p className="text-white text-[10px] font-bold uppercase tracking-[0.2em]">{image.category}</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
 
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="w-14 h-14 rounded-full border border-primary/10 flex items-center justify-center text-primary disabled:opacity-30 hover:bg-primary hover:text-white transition-all"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </div>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-8 pt-12">
+                        <button 
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                            className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center text-primary disabled:opacity-20 hover:bg-primary hover:text-white transition-all shadow-lg shadow-primary/5"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        
+                        <div className="flex items-center gap-3">
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button 
+                                    key={i}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    className={`w-2 h-2 rounded-full transition-all ${currentPage === i + 1 ? 'w-8 bg-primary' : 'bg-primary/20 hover:bg-primary/40'}`}
+                                />
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center text-primary disabled:opacity-20 hover:bg-primary hover:text-white transition-all shadow-lg shadow-primary/5"
+                        >
+                            <ChevronRight className="w-6 h-6" />
+                        </button>
+                    </div>
+                )}
+            </>
         )}
       </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {selectedImage && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 sm:p-20">
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute inset-0 bg-primary/95 backdrop-blur-xl"
+                />
+                <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="relative w-full h-full max-w-6xl max-h-[80vh] rounded-[3rem] overflow-hidden"
+                >
+                    <Image src={selectedImage} alt="Fullscreen View" fill className="object-contain" />
+                    <button 
+                        onClick={() => setSelectedImage(null)}
+                        className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 transition-all flex items-center justify-center text-white border border-white/20 backdrop-blur-md"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
+
+const X = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+);
 
 export default GallerySection;

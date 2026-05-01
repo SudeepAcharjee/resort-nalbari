@@ -34,6 +34,7 @@ const MenuPage = () => {
           fill
           className="object-cover brightness-[0.4]"
           priority
+          sizes="100vw"
         />
         <div className="relative z-10 text-center px-6">
           <motion.div

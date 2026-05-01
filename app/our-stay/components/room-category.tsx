@@ -113,6 +113,7 @@ const RoomCategory = ({ title, price, available, description, features, images, 
                         alt={`${title} view ${index}`}
                         fill
                         className="object-cover pointer-events-none"
+                        sizes="(max-width: 1024px) 100vw, 50vw"
                     />
                 </motion.div>
              </AnimatePresence>

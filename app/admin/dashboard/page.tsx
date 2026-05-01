@@ -10,16 +10,18 @@ import {
   TrendingUp, 
   Calendar,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Image as ImageIcon,
+  Home
 } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState([
     { name: "Total Bookings", value: "0", icon: Calendar, color: "bg-blue-500" },
-    { name: "Pending Inquiries", value: "0", icon: MessageSquare, color: "bg-orange-500" },
-    { name: "Website Visitors", value: "1,284", icon: Users, color: "bg-green-500" },
-    { name: "Estimated Revenue", value: "₹0", icon: TrendingUp, color: "bg-purple-500" },
+    { name: "Inquiry Log", value: "0", icon: MessageSquare, color: "bg-orange-500" },
+    { name: "Gallery Items", value: "0", icon: ImageIcon, color: "bg-green-500" },
+    { name: "Rooms Available", value: "0", icon: Home, color: "bg-purple-500" },
   ]);
 
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
@@ -27,49 +29,51 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Real-time listener for bookings
-    const qBookings = query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(5));
+    // 1. Real-time listener for bookings & Revenue
+    const qBookings = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
     const unsubBookings = onSnapshot(qBookings, (snapshot) => {
       const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setRecentBookings(bookings);
+      setRecentBookings(bookings.slice(0, 5));
       
-      // Update total bookings count and revenue
-      const total = snapshot.size;
-      let revenue = 0;
-      snapshot.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.status === 'confirmed') {
-            // Very basic estimation based on price points we know
-            if (data.roomType.includes("Heritage")) revenue += 3000;
-            else if (data.roomType.includes("Premium")) revenue += 2500;
-            else revenue += 1999;
-        }
-      });
-
-      setStats(prev => prev.map(s => {
-        if (s.name === "Total Bookings") return { ...s, value: total.toString() };
-        if (s.name === "Estimated Revenue") return { ...s, value: `₹${revenue.toLocaleString()}` };
-        return s;
-      }));
+      const totalCount = snapshot.size;
+      setStats(prev => prev.map(s => s.name === "Total Bookings" ? { ...s, value: totalCount.toString() } : s));
     });
 
-    // Real-time listener for inquiries
-    const qInquiries = query(collection(db, "contacts"), orderBy("createdAt", "desc"), limit(5));
+    // 2. Real-time listener for inquiries
+    const qInquiries = query(collection(db, "contacts"), orderBy("createdAt", "desc"));
     const unsubInquiries = onSnapshot(qInquiries, (snapshot) => {
       const inquiries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setRecentInquiries(inquiries);
+      setRecentInquiries(inquiries.slice(0, 5));
       
-      const pendingCount = snapshot.docs.filter(doc => doc.data().status === 'unread').length;
-      setStats(prev => prev.map(s => {
-        if (s.name === "Pending Inquiries") return { ...s, value: pendingCount.toString() };
-        return s;
-      }));
-      setLoading(false);
+      const totalInquiries = snapshot.size;
+      setStats(prev => prev.map(s => s.name === "Inquiry Log" ? { ...s, value: totalInquiries.toString() } : s));
+    });
+
+    // 3. Real-time listener for room categories (Availability)
+    const qRooms = query(collection(db, "room-categories"));
+    const unsubRooms = onSnapshot(qRooms, (snapshot) => {
+      let totalAvailable = 0;
+      snapshot.docs.forEach(doc => {
+        totalAvailable += (doc.data().available || 0);
+      });
+      setStats(prev => prev.map(s => s.name === "Rooms Available" ? { ...s, value: totalAvailable.toString() } : s));
+    });
+
+    // 4. Real-time listener for gallery
+    const qGallery = query(collection(db, "gallery"));
+    const unsubGallery = onSnapshot(qGallery, (snapshot) => {
+      let totalImages = 0;
+      snapshot.docs.forEach(doc => {
+        totalImages += (doc.data().images?.length || 0);
+      });
+      setStats(prev => prev.map(s => s.name === "Gallery Items" ? { ...s, value: totalImages.toString() } : s));
     });
 
     return () => {
       unsubBookings();
       unsubInquiries();
+      unsubRooms();
+      unsubGallery();
     };
   }, []);
 
@@ -77,8 +81,8 @@ export default function AdminDashboard() {
     <div className="space-y-12">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-primary font-serif text-4xl mb-2">Welcome Back, Admin</h1>
-          <p className="text-primary/40 font-bold uppercase tracking-widest text-xs">Overview of your resort operations</p>
+          <h1 className="text-primary font-serif text-4xl mb-2">Resort Overview</h1>
+          <p className="text-primary/40 font-bold uppercase tracking-widest text-xs">Real-time performance metrics</p>
         </div>
         <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl shadow-sm border border-primary/5">
             <Clock className="w-4 h-4 text-primary/40" />
@@ -112,9 +116,9 @@ export default function AdminDashboard() {
          {/* Recent Bookings */}
          <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-primary/5">
             <div className="flex justify-between items-center mb-8">
-                <h3 className="text-primary font-serif text-2xl">Recent Bookings</h3>
+                <h3 className="text-primary font-serif text-2xl">Recent Activity</h3>
                 <Link href="/admin/bookings" className="text-secondary text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-                    View All <ArrowRight className="w-3 h-3" />
+                    All Bookings <ArrowRight className="w-3 h-3" />
                 </Link>
             </div>
             <div className="space-y-6">
@@ -124,15 +128,15 @@ export default function AdminDashboard() {
                     <div key={booking.id} className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 group hover:bg-primary transition-all cursor-pointer">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-primary font-bold uppercase">
-                                {booking.name.charAt(0)}
+                                {booking.name?.charAt(0) || "B"}
                             </div>
                             <div>
                                 <p className="font-bold text-sm text-primary group-hover:text-white">{booking.name}</p>
-                                <p className="text-xs text-primary/40 group-hover:text-white/60">{booking.roomType} • {booking.persons}</p>
+                                <p className="text-xs text-primary/40 group-hover:text-white/60">{booking.roomType} • {booking.persons} Persons</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs font-bold text-primary group-hover:text-white uppercase">{booking.status}</p>
+                            <p className="text-xs font-bold text-primary group-hover:text-white uppercase">{booking.status || 'pending'}</p>
                             <p className="text-[10px] uppercase tracking-widest text-primary/40 group-hover:text-white/60">
                                 {booking.createdAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </p>

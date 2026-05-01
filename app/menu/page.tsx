@@ -1,10 +1,25 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { Download, UtensilsCrossed, Leaf, Coffee } from "lucide-react";
+import { Download, UtensilsCrossed, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+import dynamic from "next/dynamic";
+
+// Dynamic import of the entire PDF Viewer component to keep everything out of SSR
+const PDFViewer = dynamic(() => import("./components/pdf-viewer"), { 
+    ssr: false,
+    loading: () => (
+        <div className="flex flex-col items-center gap-4 py-20">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-primary/40 font-bold uppercase tracking-widest text-[10px]">Initializing Viewer...</p>
+        </div>
+    )
+});
+
+import { Leaf, Coffee } from "lucide-react";
 
 const MenuPage = () => {
   return (
@@ -12,12 +27,12 @@ const MenuPage = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
         <Image
           src="/gallery/dining-1.png"
           alt="Menu Hero"
           fill
-          className="object-cover brightness-[0.5]"
+          className="object-cover brightness-[0.4]"
           priority
         />
         <div className="relative z-10 text-center px-6">
@@ -33,18 +48,10 @@ const MenuPage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
-            className="text-white font-serif text-6xl md:text-8xl mb-8 leading-none"
+            className="text-white font-serif text-6xl md:text-8xl mb-4 leading-none"
           >
             Our Menu
           </motion.h1>
-          <motion.p
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             transition={{ delay: 0.4 }}
-             className="text-white/70 text-xl max-w-2xl mx-auto font-light"
-          >
-             Discover the authentic flavors of Nalbari, prepared with organic ingredients from our own agro-farm.
-          </motion.p>
         </div>
       </section>
 
@@ -75,45 +82,13 @@ const MenuPage = () => {
         </div>
       </section>
 
-      {/* PDF Menu Section */}
-      <section className="py-24 px-6 md:px-12 lg:px-24">
-        <div className="max-w-5xl mx-auto space-y-12">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-8">
-            <div className="space-y-4">
-              <span className="text-secondary font-bold tracking-widest uppercase text-xs">Curated Selection</span>
-              <h2 className="text-primary font-serif text-4xl md:text-5xl">Digital Menu</h2>
-            </div>
-            <a 
-              href="/Menu.pdf" 
-              download
-              className="inline-flex items-center gap-3 bg-primary text-white px-8 py-4 rounded-full font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-            >
-              <Download className="w-5 h-5" />
-              Download PDF
-            </a>
-          </div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative w-full aspect-[1/1.4] bg-white rounded-[2rem] overflow-hidden shadow-2xl border border-primary/10"
-          >
-            <iframe 
-              src="/Menu.pdf#toolbar=0" 
-              className="w-full h-full border-none"
-              title="Resort Menu"
-            />
-            {/* Fallback for browsers that don't support iframes well */}
-            <div className="absolute inset-0 flex items-center justify-center bg-background -z-10">
-                <p className="text-foreground/40">Loading digital menu...</p>
-            </div>
-          </motion.div>
+      {/* HTML PDF Viewer Section */}
+      <section className="py-24 px-4 md:px-8 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <PDFViewer file="/Menu.pdf" />
           
-          <div className="text-center">
-            <p className="text-foreground/50 text-sm italic">
-                *Menu items and prices are subject to seasonal availability and change.
-            </p>
+          <div className="mt-12 text-center text-foreground/40 text-[10px] italic space-y-2 uppercase tracking-widest font-bold">
+            <p>*Seasonal items may vary. Please confirm with your server.</p>
           </div>
         </div>
       </section>

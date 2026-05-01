@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Edit2, X, Upload, Save, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight, Grid } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Upload, Save, Loader2, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 interface GalleryItem {
   id: string;
@@ -152,7 +153,14 @@ export default function ManageGallery() {
             >
                 <div className="relative aspect-[4/3] w-full overflow-hidden">
                     {item.images[0] ? (
-                        <Image src={item.images[0]} alt={item.category} fill className="object-cover group-hover:scale-110 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 33vw" />
+                        <Image 
+                            loader={item.images[0].includes('cloudinary') ? cloudinaryLoader : undefined}
+                            src={item.images[0]} 
+                            alt={item.category} 
+                            fill 
+                            className="object-cover group-hover:scale-110 transition-transform duration-700" 
+                            sizes="(max-width: 768px) 100vw, 33vw" 
+                        />
                     ) : (
                         <div className="absolute inset-0 bg-primary/5 flex items-center justify-center text-primary/20">
                             <ImageIcon className="w-12 h-12" />
@@ -177,7 +185,14 @@ export default function ManageGallery() {
                     <div className="flex -space-x-3">
                         {item.images.slice(0, 3).map((img, i) => (
                             <div key={i} className="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-sm relative">
-                                <Image src={img} alt="" fill className="object-cover" sizes="40px" />
+                                <Image 
+                                    loader={img.includes('cloudinary') ? cloudinaryLoader : undefined}
+                                    src={img} 
+                                    alt="" 
+                                    fill 
+                                    className="object-cover" 
+                                    sizes="40px" 
+                                />
                             </div>
                         ))}
                         {item.images.length > 3 && (
@@ -245,7 +260,14 @@ export default function ManageGallery() {
                                         animate={{ opacity: 1, scale: 1 }}
                                         className="relative aspect-square rounded-2xl overflow-hidden group border border-primary/5 shadow-md"
                                     >
-                                        <Image src={url} alt="" fill className="object-cover" sizes="(max-width: 768px) 50vw, 20vw" />
+                                        <Image 
+                                            loader={url.includes('cloudinary') ? cloudinaryLoader : undefined}
+                                            src={url} 
+                                            alt="" 
+                                            fill 
+                                            className="object-cover" 
+                                            sizes="(max-width: 768px) 50vw, 20vw" 
+                                        />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <button 
                                                 type="button"

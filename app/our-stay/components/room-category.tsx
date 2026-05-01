@@ -13,10 +13,13 @@ interface RoomCategoryProps {
   description: string;
   features: string[];
   images: string[];
+  bed?: string;
+  capacity?: string;
+  size?: string;
   reverse?: boolean;
 }
 
-const RoomCategory = ({ title, price, available, description, features, images, reverse }: RoomCategoryProps) => {
+const RoomCategory = ({ title, price, available, description, features, images, bed, capacity, size, reverse }: RoomCategoryProps) => {
   const [index, setIndex] = useState(0);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
@@ -63,13 +66,13 @@ const RoomCategory = ({ title, price, available, description, features, images, 
 
           <div className="flex gap-8 pt-8 border-t border-primary/10">
             <div className="flex items-center gap-2 text-foreground/40 uppercase tracking-widest text-[10px] font-bold">
-              <Bed className="w-4 h-4" /> 1 King Bed
+              <Bed className="w-4 h-4 text-secondary" /> {bed || "1 King Bed"}
             </div>
             <div className="flex items-center gap-2 text-foreground/40 uppercase tracking-widest text-[10px] font-bold">
-              <User className="w-4 h-4" /> 2 Adults
+              <User className="w-4 h-4 text-secondary" /> {capacity || "2 Adults"}
             </div>
             <div className="flex items-center gap-2 text-foreground/40 uppercase tracking-widest text-[10px] font-bold">
-              <Maximize className="w-4 h-4" /> 350 sqft
+              <Maximize className="w-4 h-4 text-secondary" /> {size || "350 sqft"}
             </div>
           </div>
 

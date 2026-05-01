@@ -10,18 +10,36 @@ interface BookingDialogProps {
   roomType: string;
 }
 
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
 const BookingDialog = ({ isOpen, onClose, roomType }: BookingDialogProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      await addDoc(collection(db, "bookings"), {
+        roomType,
+        name: formData.get("name"),
+        phone: formData.get("phone"),
+        checkIn: formData.get("checkIn"),
+        checkOut: formData.get("checkOut"),
+        persons: formData.get("persons"),
+        createdAt: serverTimestamp(),
+        status: "pending"
+      });
       setIsSubmitted(true);
-    }, 1500);
+    } catch (error) {
+      console.error("Error adding booking: ", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,6 +83,7 @@ const BookingDialog = ({ isOpen, onClose, roomType }: BookingDialogProps) => {
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/30" />
                         <input 
                           required
+                          name="name"
                           type="text" 
                           placeholder="John Doe"
                           className="w-full pl-12 pr-4 py-4 rounded-2xl bg-primary/5 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-primary/40 text-primary"
@@ -79,6 +98,7 @@ const BookingDialog = ({ isOpen, onClose, roomType }: BookingDialogProps) => {
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/30" />
                         <input 
                           required
+                          name="phone"
                           type="tel" 
                           placeholder="+91 00000 00000"
                           className="w-full pl-12 pr-4 py-4 rounded-2xl bg-primary/5 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-primary/40 text-primary"
@@ -93,6 +113,7 @@ const BookingDialog = ({ isOpen, onClose, roomType }: BookingDialogProps) => {
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/30 pointer-events-none" />
                         <input 
                           required
+                          name="checkIn"
                           type="date" 
                           className="w-full pl-12 pr-4 py-4 rounded-2xl bg-primary/5 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all text-primary text-sm"
                         />
@@ -106,6 +127,7 @@ const BookingDialog = ({ isOpen, onClose, roomType }: BookingDialogProps) => {
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/30 pointer-events-none" />
                         <input 
                           required
+                          name="checkOut"
                           type="date" 
                           className="w-full pl-12 pr-4 py-4 rounded-2xl bg-primary/5 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all text-primary text-sm"
                         />
@@ -117,7 +139,7 @@ const BookingDialog = ({ isOpen, onClose, roomType }: BookingDialogProps) => {
                       <label className="text-[10px] font-bold uppercase tracking-widest text-primary/40 ml-1">Total Persons</label>
                       <div className="relative">
                         <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/30 pointer-events-none" />
-                        <select defaultValue="2 Persons" className="w-full pl-12 pr-4 py-4 rounded-2xl bg-primary/5 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none text-primary text-sm">
+                        <select name="persons" defaultValue="2 Persons" className="w-full pl-12 pr-4 py-4 rounded-2xl bg-primary/5 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none text-primary text-sm">
                             <option>1 Person</option>
                             <option>2 Persons</option>
                             <option>3 Persons</option>

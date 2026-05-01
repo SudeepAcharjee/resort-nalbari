@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: "Experience the tranquility of nature at Ganga Jamuna Agro Resort. Luxury eco-cabins nestled in the heart of the forest.",
 };
 
+import { AuthProvider } from "@/context/auth-context";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${poppins.variable} ${playfair.variable}`}>
       <body className="antialiased font-sans">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

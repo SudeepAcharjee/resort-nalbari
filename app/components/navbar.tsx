@@ -19,11 +19,11 @@ const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { name: "About", href: "#about" },
-    { name: "Facilities", href: "#facilities" },
-    { name: "Gallery", href: "#gallery" },
-    { name: "Activities", href: "#activities" },
-    { name: "Contact", href: "#contact" },
+    { name: "About", href: "/about" },
+    { name: "Menu", href: "/menu" },
+    { name: "Gallery", href: "/gallery" },
+    { name: "Our Stay", href: "/our-stay" },
+    { name: "Contact", href: "/contact" },
   ];
 
   return (
@@ -40,14 +40,26 @@ const Navbar = () => {
           {/* Logo (Left) */}
           <div className="flex justify-start">
             <Link href="/" className="flex items-center group">
-              <div className="relative w-12 h-12 md:w-14 md:h-14 transition-transform group-hover:rotate-6">
+              <motion.div 
+                className="relative w-12 h-12 md:w-14 md:h-14"
+                animate={{ 
+                  y: [0, -5, 0],
+                }}
+                transition={{ 
+                  duration: 4, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+                whileHover={{ rotate: 12, scale: 1.1 }}
+              >
                 <Image
                   src="/logo.svg"
                   alt="Resort Logo"
                   fill
+                  priority
                   className="object-contain"
                 />
-              </div>
+              </motion.div>
             </Link>
           </div>
 
@@ -57,7 +69,7 @@ const Navbar = () => {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`px-5 py-2 text-[14px] font-semibold transition-all rounded-full hover:bg-primary/5 ${
+                className={`px-5 py-2 text-[14px] font-semibold transition-all rounded-full hover:bg-primary/5 whitespace-nowrap ${
                   scrolled ? "text-primary/70 hover:text-primary" : "text-foreground/70 hover:text-foreground"
                 }`}
               >
@@ -69,7 +81,7 @@ const Navbar = () => {
           {/* Action Button (Right) */}
           <div className="hidden md:flex justify-end items-center gap-4">
             <Link
-              href="#contact"
+              href="/our-stay"
               className={`px-8 py-3 rounded-full text-[14px] font-bold transition-all shadow-lg active:scale-95 ${
                 scrolled 
                   ? "bg-primary text-white shadow-primary/20 hover:brightness-110" 
@@ -103,9 +115,19 @@ const Navbar = () => {
             className="fixed inset-0 z-[110] bg-primary flex flex-col p-8 text-white md:hidden"
           >
             <div className="flex justify-between items-center mb-16">
-               <div className="relative w-12 h-12">
+               <motion.div 
+                className="relative w-12 h-12"
+                animate={{ 
+                  y: [0, -5, 0],
+                }}
+                transition={{ 
+                  duration: 4, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              >
                 <Image src="/logo.svg" alt="Logo" fill className="object-contain" />
-              </div>
+              </motion.div>
               <button 
                 className="p-2 bg-white/10 rounded-full"
                 onClick={() => setMobileMenuOpen(false)}
@@ -115,7 +137,7 @@ const Navbar = () => {
             </div>
             
             <div className="flex flex-col gap-8">
-              {[...navLinks, { name: "Contact", href: "#contact" }].map((item, index) => (
+              {[...navLinks].map((item, index) => (
                 <motion.div
                   key={item.name}
                   initial={{ opacity: 0, x: 20 }}
@@ -124,7 +146,7 @@ const Navbar = () => {
                 >
                   <Link
                     href={item.href}
-                    className="text-4xl font-serif hover:text-secondary transition-colors inline-block"
+                    className="text-4xl font-serif hover:text-secondary transition-colors inline-block whitespace-nowrap"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}

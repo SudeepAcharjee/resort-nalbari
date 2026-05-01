@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUpRight, Calendar, Users, MapPin } from "lucide-react";
 
 const Hero = () => {
@@ -29,12 +30,16 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-wrap gap-4 pt-4">
-              <button className="bg-secondary text-primary px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-secondary/20">
-                Book a stay
-              </button>
-              <button className="border border-white/20 text-white px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white hover:text-primary transition-all">
-                Our Location
-              </button>
+              <Link href="/our-stay">
+                <button className="bg-secondary text-primary px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-secondary/20">
+                  Book a stay
+                </button>
+              </Link>
+              <Link href="/contact">
+                <button className="border border-white/20 text-white px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white hover:text-primary transition-all">
+                  Our Location
+                </button>
+              </Link>
             </div>
           </div>
         </div>

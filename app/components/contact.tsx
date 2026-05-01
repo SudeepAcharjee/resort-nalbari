@@ -60,16 +60,7 @@ const Contact = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 pt-6 border-t border-primary/5">
-              <span className="text-[12px] font-bold text-primary/40 uppercase tracking-widest">Follow us</span>
-              <div className="flex gap-3">
-                {[Camera, Earth].map((Icon, i) => (
-                  <a key={i} href="#" className="w-8 h-8 rounded-full border border-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all">
-                    <Icon className="w-3.5 h-3.5" />
-                  </a>
-                ))}
-              </div>
-            </div>
+           
           </motion.div>
 
           {/* Right Column: Contact Form (Takes 3/5 columns) */}

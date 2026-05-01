@@ -47,15 +47,26 @@ const Footer = () => {
                     <div className="lg:col-span-5 space-y-8">
                         <div className="space-y-6">
                             <Link href="/" className="flex items-center group">
-                                <div className="relative w-14 h-14 transition-transform group-hover:rotate-6">
+                                <motion.div 
+                                    className="relative w-14 h-14"
+                                    animate={{ 
+                                        y: [0, -5, 0],
+                                    }}
+                                    transition={{ 
+                                        duration: 4, 
+                                        repeat: Infinity, 
+                                        ease: "easeInOut" 
+                                    }}
+                                    whileHover={{ rotate: 12, scale: 1.1 }}
+                                >
                                     <Image
                                         src="/logo.svg"
                                         alt="Logo"
                                         fill
-                                        style={{ filter: 'brightness(0) invert(1)' }}
+                                        priority
                                         className="object-contain"
                                     />
-                                </div>
+                                </motion.div>
                                 <span className="ml-4 font-serif text-2xl tracking-tight font-bold uppercase">GANGA JAMUNA</span>
                             </Link>
                             <p className="text-white/70 text-sm md:text-base leading-relaxed max-w-sm font-light">
@@ -83,10 +94,11 @@ const Footer = () => {
                             <h4 className="text-sm uppercase tracking-[0.2em] font-bold text-white border-b border-white/10 pb-2 w-fit">Navigate</h4>
                             <ul className="space-y-4">
                                 {[
-                                    { name: "About Us", href: "#about" },
-                                    { name: "Facilities", href: "#facilities" },
-                                    { name: "Gallery", href: "#gallery" },
-                                    { name: "Activities", href: "#activities" }
+                                    { name: "About Us", href: "/about" },
+                                    { name: "Menu", href: "/menu" },
+                                    { name: "Gallery", href: "/gallery" },
+                                    { name: "Our Stay", href: "/our-stay" },
+                                    { name: "Contact", href: "/contact" }
                                 ].map((link) => (
                                     <li key={link.name}>
                                         <Link href={link.href} className="text-white/60 hover:text-white transition-colors text-base block">
